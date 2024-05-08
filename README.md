@@ -2,7 +2,9 @@
 
 Code implementation for the paper "The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups". Examples in S1 and SE(2) (doors dataset and landmark simulator) are included.
 
-![main](media/main.gif)
+<p align="center">
+  <img src="media/main.gif" />
+</p>
 
 ## Installation
 
@@ -67,7 +69,7 @@ Lastly, we also provide a dummy bi-modal experiment in SE(2) ([se2_filter.py](se
 python3 se2_filter.py
 ```
 
-All the results of the experiment are logger in the `results` folder which is created automatically when an experiment is run. Useful information such as metrics and images are stored automatically there. Below is the expected folder structure.
+All the results of the experiment are logged in the `results` folder which is created automatically when an experiment is run. Useful information such as metrics and images are stored automatically there. Below is the expected folder structure.
 
 ```bash
 ├── 2024-05-03T09:58:46.508015
