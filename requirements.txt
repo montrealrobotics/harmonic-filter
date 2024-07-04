@@ -1,0 +1,17 @@
+git+https://github.com/saparkison/lie_learn.git
+numpy
+scipy
+matplotlib
+notebook
+moviepy
+opencv-python
+comet_ml==3.28.2
+rich==12.4.4
+# Submitit with experimental branch
+submitit==1.4.5
+hydra-core==1.2.0
+hydra-colorlog==1.2.0
+# Submitit launcher
+git+https://github.com/MikeS96/hydra_submitit_launcher@main#egg=hydra-submitit-launcher
+hydra_optuna_sweeper==1.2.0
+

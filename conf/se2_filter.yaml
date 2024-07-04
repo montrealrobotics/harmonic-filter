@@ -1,0 +1,43 @@
+defaults:
+  - _self_                                      # Override default config with derived ones
+  - logger: null                                # set logger, options are [null, comet]
+  - log_dir: default                       # set logging directory for hydra/logger
+
+  # config for hyperparameter optimization and launcher -- use it with --multirun flag
+  - launcher: local                              # launcher used for the job, options are [remote, local, null]
+
+    # enable color logging
+  - override hydra/hydra_logging: colorlog      # Pretty colors
+  - override hydra/job_logging: colorlog
+
+# path to original working directory
+# hydra hijacks working directory by changing it to the new log directory
+# https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
+original_work_dir: ${hydra:runtime.cwd}
+
+# path to folder with data
+data_dir: ${original_work_dir}/data/
+
+# pretty print config at the start of the run using Rich library
+print_config: True
+# disable python warnings if they annoy you
+ignore_warnings: True
+
+# seed for random number generators in pytorch, numpy and python.random
+seed: 12345
+# default name for the experiment, determines logging folder path
+# (you can overwrite this name in experiment configs)
+name: se2_filter
+
+# These are launching params
+num_workers: 8
+devices: 'cpu'                   # 'cpu' or 'gpu'
+
+# Sweep parameters
+results_path: ${original_work_dir}/results
+filter:
+  n_samples: 50
+  grid_size: [50, 50, 32]
+  var_motion: 1e-4
+  var_measurement: 5e-3
+  var_prior: [0.1, 0.1, 0.1]
