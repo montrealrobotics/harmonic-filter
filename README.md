@@ -51,10 +51,10 @@ jupyter-notebook s1_bayes_filter.ipynb
 
 ### Running experiments in  SE(2)
 
-The whole project relies on [hydra](https://hydra.cc/) to handle the configuration files. These files are located in the `conf` folder. For instance, the landmark-only simulation experiment ([se2_landmark_filter.py](se2_landmark_filter.py)) can be executed with the following command:
+The whole project relies on [hydra](https://hydra.cc/) to handle the configuration files. These files are located in the `conf` folder. For instance, the landmark-only simulation experiment ([se2_landmark_filter_bimodal.py](se2_landmark_filter_bimodal.py)) can be executed with the following command:
 
 ```bash
-python3 se2_landmark_filter.py filter.n_samples=80 duration=100
+python3 se2_landmark_filter_bimodal.py filter.n_samples=80 duration=100
 ```
 
 Similarly, the bearing-only doors' experiment ([se2_door_filter.py](se2_door_filter.py)) can be run with the following command:
