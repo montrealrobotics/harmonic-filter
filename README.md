@@ -128,12 +128,13 @@ The above command will produce this image.
 If you found this code useful, please use the following citation.
 
 ```bibtex
-@article{saavedra2024hef,
-	title        = {The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups},
-	author       = {Saavedra-Ruiz Miguel, Parkison Steven, Arora Ria, Forbes James, and Paull Liam},
-	year         = 2024,
-	journal      = {Preprint}
-}   
+@inproceedings{saavedra2025hef, 
+     title = "The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups",
+     author = {Miguel Saavedra-Ruiz and Steven A. Parkison and Ria Arora and James Richard Forbes and Liam Paull},
+     year = {2025},
+     booktitle = "IEEE Robot. and Automation Lett.",
+     year = 2025; 
+}  
 ```
 
 ### Ackowldegements
