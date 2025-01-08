@@ -28,7 +28,7 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-Continue installing the project dependencies.
+Continue installing the project dependencies. First install [pyNFFT](https://github.com/pyNFFT/pyNFFT) and then proceed with the normal installation.
 
 ```bash
 pip3 install -r requirements.txt

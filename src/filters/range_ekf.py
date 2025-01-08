@@ -1,11 +1,13 @@
 """
 A class for a harmonic bayesian filter
 """
-from typing import Tuple
+from typing import Tuple, List
+
 
 import numpy as np
 from scipy.stats import multivariate_normal
 from src.groups.se2_group import SE2Group
+from scipy.special import logsumexp
 
 from einops import rearrange
 
@@ -81,6 +83,92 @@ class RangeEKF:
         ll = multivariate_normal.logpdf(pose, mean=self.pose.parameters(), cov=self.state_cov)
         return -ll
 
+
+class RangeEKFBimodal(RangeEKF):
+    def __init__(self,
+                 priors: List[np.ndarray],
+                 priors_cov: List[np.ndarray], 
+                 grid_size: Tuple[int] = (50, 50, 32)):
+        """
+        :param prior: a prior pose of as a numpy array of dimension (3,)
+        :param prior_cov: Covariance noise for the prior distribution of dimension (3, 3)
+        """
+        self.grid_size: Tuple[int] = grid_size
+        # Initialize the two modes
+        pose1: SE2Group = SE2Group.from_parameters(*priors[0])
+        pose2: SE2Group = SE2Group.from_parameters(*priors[1])
+        self.pose = [pose1, pose2]
+        # Assume the two modes are equally likely
+        self.pi = np.array([0.5, 0.5])
+        cov1: np.ndarray = priors_cov[0].copy()
+        cov2: np.ndarray = priors_cov[1].copy()
+        self.state_cov = [cov1, cov2]
+        self.mixture_mean = np.zeros(3)
+        self.mixture_mode = np.zeros(3)
+        self.mixture_cov = np.zeros((3, 3))
+        self.compute_mixture_statistics()
+        self.pose = SE2Group.from_parameters(self.mixture_mean[0], self.mixture_mean[1], self.mixture_mean[2])
+        self.state_cov = self.mixture_cov
+
+
+    def prediction(self,
+                   step: np.ndarray,
+                   step_cov: np.ndarray) -> None:
+        """
+        Prediction step EKF
+        :param step: motion step (relative displacement) of dimension (3,)
+        :param step_cov: Covariance matrix of prediction step of dimension (3, 3)
+        :return None
+        """
+        return super().prediction(step, step_cov)
+
+    def update(self,
+               landmarks: np.ndarray,
+               observations: np.ndarray,
+               observations_cov: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Update step EKF
+        :param landmarks: location of each UWB landmark in the map (n, 3)
+        :param observations: range measurements of dimension (n,)
+        :param observations_cov: variance of each measurement of dimension (n,)
+        :return normalized belief as the mean and covariance of a gaussian distribution
+        """
+        return super().update(landmarks, observations, observations_cov)
+    
+    def compute_mixture_statistics(self):
+        """
+        Compute the mean and covariance of the mixture distribution
+        """
+        self.mixture_mean = self.pi[0] * self.pose[0].parameters() + self.pi[1] * self.pose[1].parameters()
+        self.mixture_cov = np.zeros((3, 3))
+        for p in range(2):
+            self.mixture_cov += self.pi[p] * (self.state_cov[p] + (self.pose[p].parameters() - self.mixture_mean) @ (self.pose[p].parameters() - self.mixture_mean).T)
+        self.mixture_mode = self.pose[np.argmax(self.pi)].parameters()
+
+    def approximate_grid_density(self):
+        """
+        Approximate the density of the mixture distribution using a grid
+        """
+        xs = np.linspace(-0.5, 0.5, self.grid_size[0], endpoint=False)
+        ys = np.linspace(-0.5, 0.5, self.grid_size[1], endpoint=False)
+        x, y = np.meshgrid(xs, ys, indexing='ij')
+        pos = np.dstack((x, y))
+        # Appoximate density in the grid
+        rv1 = multivariate_normal(self.pose[0].parameters()[:2], self.state_cov[0][:2, :2])
+        rv2 = multivariate_normal(self.pose[1].parameters()[:2], self.state_cov[1][:2, :2])
+        z1 = rv1.pdf(pos)
+        z2 = rv2.pdf(pos)
+        z = self.pi[0] * z1 + self.pi[1] * z2
+        return x, y, z
+
+    def neg_log_likelihood(self, pose):
+        """
+        Evaluate posterior distribution of a multivariate gaussian
+        :param pose: Pose at which to interpolate the SE2 Fourier transform
+        :return ll: Probability of distribution determined by fourier coefficients (moments) at given pose
+        """
+        return super().neg_log_likelihood(pose)
+    
 
 class BearingEKF(RangeEKF):
     def __init__(self, **kwargs):

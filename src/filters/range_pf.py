@@ -1,7 +1,7 @@
 """
 A class that implements a particle filter.
 """
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 from scipy.stats import norm
@@ -120,6 +120,30 @@ class RangePF:
         # Prevent zero likelihood error
         ll = np.log(p_g + 1e-8)
         return -ll
+    
+
+class RangePFBimodal(RangePF):
+    def __init__(self, priors: List[np.ndarray], priors_cov: List[np.ndarray], n_particles = 100):
+        """
+        :param prior: a prior pose of as a numpy array of dimension (3,)
+        :param prior_cov: Covariance noise for the prior distribution of dimension (3, 3)
+        :param n_particles: Number of particles to use.
+        """
+        # Assume the two modes are equally likely
+        self.pi = np.array([0.5, 0.5])
+        self._N = n_particles
+        # Sample half the particles from each mode
+        self.particles1 = (np.linalg.cholesky(priors_cov[0]) @ np.random.randn(3, self._N // 2)).T + priors[0]
+        self.particles2 = (np.linalg.cholesky(priors_cov[1]) @ np.random.randn(3, self._N // 2)).T + priors[1]
+        self.particles = np.concatenate([self.particles1, self.particles2], axis=0)
+        self.weights = np.ones(self._N) / self._N
+        self.mode_index = None
+        
+    def prediction(self, step, step_cov):
+        return super().prediction(step, step_cov)
+    
+    def update(self, landmarks, observations, observations_cov):
+        return super().update(landmarks, observations, observations_cov)
 
 
 class BearingPF(RangePF):

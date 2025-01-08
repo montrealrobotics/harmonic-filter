@@ -76,6 +76,8 @@ CONFIG_FILTERS_SE2_UWB = [{'label': "Mean", 'c': '#2ca02c', 'marker': 'X', 's': 
                            'edgecolor': 'k', 'lw': 1, 'zorder': 3, 'alpha': 0.8, 'f_name': 'HEF'},
                           {'label': "Mean", 'c': '#d62728', 'marker': 'D', 's': 120, 'cmap': plt.cm.Reds_r,
                            'edgecolor': 'k', 'lw': 1, 'zorder': 3, 'alpha': 0.8, 'f_name': 'EKF'},
+                          {'label': "Mean", 'c': '#0077b6', 'marker': 'o', 's': 120, 'cmap': plt.cm.Blues,
+                            'edgecolor': 'k', 'lw': 1, 'zorder': 3, 'alpha': 0.8, 'f_name': 'IEKF'},
                           {'label': "Mean", 'c': '#9467bd', 'marker': '<', 's': 120, 'edgecolor': 'k', 'lw': 1,
                            'zorder': 3, 'alpha': 0.8, 'f_name': 'PF'},
                           {'label': "Mean", 'c': '#8c564b', 'marker': 'p', 'cmap': plt.cm.pink_r, 's': 120,

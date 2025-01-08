@@ -1,7 +1,7 @@
 """
 A python class implementing a range-only histogram filter
 """
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 from einops import rearrange
@@ -176,6 +176,40 @@ class RangeHF:
         ll = np.log((self.prior[idx] / self.volume) + 1e-8)
         return -ll
 
+
+class RangeHFBimodal(RangeHF):
+    def __init__(self,
+                 priors: np.ndarray,
+                 priors_cov: np.ndarray,
+                 grid_samples: np.ndarray,
+                 grid_bounds: Tuple[float] = (-0.5, 0.5),
+                 grid_size: Tuple[int] = (50, 50, 32)):
+        """
+        :param prior: a prior pose of as a numpy array of dimension (3,)
+        :param prior_cov: covariance noise for the prior distribution of dimension (3, 3)
+        :param grid_samples: samples of the grid (x, y, theta)
+        :param grid_bounds: x-y bounds of the grid, this assumes a square grid
+        :param grid_size: Dimensions of the grid (x_dim, y_dim, theta_dim)
+        """
+        self.grid_samples: np.ndarray = grid_samples
+        self.grid_bounds: Tuple[float] = grid_bounds
+        self.grid_size: Tuple[int] = grid_size
+        # Assume the two modes are equally likely
+        self.pi = np.array([0.5, 0.5])
+        self._N = np.prod([ax for ax in grid_size])
+        self.step_xy = (grid_bounds[1] - grid_bounds[0]) / grid_size[0]
+        self.step_theta = (np.pi * 2) / grid_size[2]
+        self.volume = self.step_xy * self.step_xy * self.step_theta
+        # Define bimodal prior and normalize it
+        self.prior = self.pi[0] * multivariate_normal(priors[0], priors_cov[0]).pdf(self.grid_samples) + self.pi[1] * multivariate_normal(priors[1], priors_cov[1]).pdf(self.grid_samples)
+        self.prior /= np.sum(self.prior)
+        # self.plot(self.prior[:].reshape(self.grid_size), "Posteriori")
+    def prediction(self, step, step_cov):
+        return super().prediction(step, step_cov)
+    
+    def update(self, landmarks, observations, observations_cov):
+        return super().update(landmarks, observations, observations_cov)
+    
 
 class BearingHF(RangeHF):
     def __init__(self, d_door2pose: float = 0.1, **kwargs):

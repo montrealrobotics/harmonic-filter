@@ -8,6 +8,8 @@ from lie_learn.spectral.SE2FFT import SE2_FFT
 from src.distributions.se2_distributions import SE2, SE2Gaussian, SE2Square
 from src.filters.bayes_filter import BayesFilter
 from src.filters.range_ekf import RangeEKF
+from src.filters.range_iekf import RangeIEKF
+from src.filters.iekf_utils import IEKFUtils, ExpSE2
 from src.filters.range_pf import RangePF
 from src.filters.range_hf import RangeHF
 from src.sampler.se2_sampler import se2_grid_samples
@@ -53,9 +55,11 @@ def main():
         oversampling_factor=3,
     )
 
+    np.random.seed(0)
     # Prior belief
     mu_belief = np.array([-0.25, 0.0, 0.0])
     cov_belief = np.diag([0.0011, 0.018, 0.001])
+    iekf_cov_belief = np.diag([0.001, 0.001, 0.3])
     # Limits for square plot
     x_limits = [-0.25, -0.15]
     y_limits = [-0.2, 0.2]
@@ -70,13 +74,15 @@ def main():
     )
     # Step - Gaussian
     mu = np.array([0.1, 0.0, 0.0])
-    cov = np.diag([0.01, 0.01, 20.0]) * 1e-2
+    cov = np.diag([0.01, 0.01, 25.0]) * 1e-2
+    iekf_cov = np.diag([0.025, 0.01, 1.0]) * 1e-2
     step = SE2Gaussian(mu, cov, samples=poses, fft=fft)
 
     # Create filters
     hef = BayesFilter(distribution=SE2, prior=belief)
     # Define Kalman Filter as baseline - Gaussian assumption does not allow for square dist.
     ekf = RangeEKF(prior=mu_belief, prior_cov=cov_belief)
+    iekf = RangeIEKF(IEKFUtils(), prior=mu_belief, prior_cov=iekf_cov_belief)
     pf = RangePF(prior=mu_belief, prior_cov=cov_belief, n_particles=np.prod(size))
     # Re-sample particles in a square-like shape
     pf.particles = sample_square_particles(
@@ -94,11 +100,13 @@ def main():
         ekf.prediction(step=step.mu, step_cov=step.cov)
         pf.prediction(step=step.mu, step_cov=step.cov)
         hf.prediction(step=step.mu, step_cov=step.cov)
+        iekf.prediction(step=step.mu, step_cov=iekf_cov @ np.diag([1, 0, 1]), dt=1)
 
     # Get statistics of each filter
     hef_pose = compute_weighted_mean(belief_hat.prob, poses, x, y, theta)
     hef_mode = compute_mode(belief_hat.prob, poses)
     ekf_pose = ekf.pose.parameters()
+    iekf_pose = iekf.pose
     pf_pose = np.mean(pf.particles, axis=0)
     # Approximate mode of particle filter being particle closer to GT (we do not have updated weights here)
     gt = np.array([0.15, 0, 0])
@@ -113,6 +121,7 @@ def main():
             "step": [None, step.prob.real],
             "HEF": [hef_pose, belief_hat.prob.real, hef_mode],
             "EKF": [ekf_pose, ekf.state_cov, ekf_pose],
+            "IEKF": [iekf_pose, iekf.state_cov, iekf_pose],
             "PF": [pf_pose, pf.particles, pf_mode],
             "HistF": [hf_pose, hf.prior.reshape(size), hf_mode],
         },
@@ -126,6 +135,7 @@ def main():
             f"Extended Kalman Filter",
             f"Particle Filter",
             f"Histogram Filter",
+            f"Invariant EKF",
         ],
         cfg=plt_cfg.CONFIG_FILTERS_SE2_UWB,
     )

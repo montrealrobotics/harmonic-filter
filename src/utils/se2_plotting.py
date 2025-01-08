@@ -8,9 +8,12 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 from matplotlib.patches import Arc
+import matplotlib.lines as mlines
 from matplotlib.transforms import IdentityTransform, TransformedBbox, Bbox
+from scipy.stats import multivariate_normal, gaussian_kde
 
 from src.distributions.se2_distributions import SE2Gaussian
+from src.filters.iekf_utils import ExpSE2
 from src.utils.evaluate_ate import align
 
 
@@ -436,7 +439,7 @@ def confidence_ellipse(mu, cov, ax, n_std=3.0, **kwargs):
     return ax.add_patch(ellipse)
 
 
-def plot_confidence_ellipse(mu, cov, ax, n_std: List[float] = [1.0, 2.0, 3.0], **kwargs) -> plt.Axes:
+def plot_confidence_ellipse(mu, cov, ax, n_std: List[float] = [1.0, 1.5, 2.0], **kwargs) -> plt.Axes:
     """
     Plot confidence ellipse of a 2D Gaussian distribution
     Create a plot of the covariance confidence ellipse of `x` and `y` for multiple sigma values
@@ -687,14 +690,15 @@ def plot_se2_bananas(filters: Dict[str, List[np.ndarray]],
     """
 
     # First three axis are prior, measurement and posterior. Fourth one is standard contour plot
-    fig = plt.figure(constrained_layout=True, figsize=(18, 6))
-    gs = fig.add_gridspec(2, 5)
+    fig = plt.figure(constrained_layout=True, figsize=(20, 6))
+    gs = fig.add_gridspec(2, 6)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0])
     ax3 = fig.add_subplot(gs[:, 1])
     ax4 = fig.add_subplot(gs[:, 2])
     ax5 = fig.add_subplot(gs[:, 3])
     ax6 = fig.add_subplot(gs[:, 4])
+    ax7 = fig.add_subplot(gs[:, 5])
     # Zip first three axes into a list
     axes = [ax1, ax2]
 
@@ -737,7 +741,7 @@ def plot_se2_bananas(filters: Dict[str, List[np.ndarray]],
     scaled_posterior = (harmonic_posterior - min_value) / (max_value - min_value)
     ax3.pcolormesh(x, y, scaled_posterior, shading='auto', cmap=cmap, zorder=0, vmin=0, vmax=1.0)
     ax3.set_title(titles[2], fontdict={'fontsize': 18})
-    ax3.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=1,fontsize="13")
+    ax3.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=0.5,fontsize="13")
 
     ### Plot EKF ###
     for c in cfg:
@@ -748,7 +752,7 @@ def plot_se2_bananas(filters: Dict[str, List[np.ndarray]],
     c["label"] = "Mean\nMode"
     plot_confidence_ellipse(ekf[0][:2], ekf[1][0:2, 0:2], ax4, **c)
     ax4.set_title(titles[3], fontdict={'fontsize': 18})
-    ax4.legend(loc='upper left', fancybox=True, framealpha=1, shadow=True, borderpad=1, fontsize="13")
+    ax4.legend(loc='upper left', fancybox=True, framealpha=1, shadow=True, borderpad=0.5, fontsize="13")
 
     ### Plot PF ###
     for c in cfg:
@@ -767,7 +771,7 @@ def plot_se2_bananas(filters: Dict[str, List[np.ndarray]],
     ax5.scatter(pf[2][0], pf[2][1], **c)
     ax5.scatter(pf[1][idx, 0], pf[1][idx, 1], c=c['c'], s=30, alpha=0.2, marker=c['marker'], zorder=0)
     ax5.set_title(titles[4], fontdict={'fontsize': 18})
-    ax5.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=1, fontsize="13")
+    ax5.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=0.5, fontsize="13")
 
     ### Plot HF ###
     for c in cfg:
@@ -786,16 +790,83 @@ def plot_se2_bananas(filters: Dict[str, List[np.ndarray]],
     hf_posterior = (hf_posterior - min_value) / (max_value - min_value)
     ax6.pcolormesh(x, y, hf_posterior, shading='auto', cmap=cmap, zorder=0, vmin=0, vmax=1.0)
     ax6.set_title(titles[5], fontdict={'fontsize': 18})
-    ax6.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=1, fontsize="13")
+    ax6.legend(loc='upper right', fancybox=True, framealpha=1, shadow=True, borderpad=0.5, fontsize="13")
+
+    ### Plot IEKF ###
+    for c in cfg:
+        if c.get('f_name') == 'IEKF':
+            break
+    c.pop('f_name')
+    iekf = filters['IEKF']
+    c["label"] = "Mean\nMode"
+    c["edgecolor"] = "honeydew"
+    c["linewidth"] = 1.5
+    cmap = c.pop('cmap')
+    ax7.scatter(iekf[0].parameters()[0], iekf[0].parameters()[1], **c)
+    c["cmap"] = cmap
+    plot_contours_exp_sample(iekf[0], iekf[1], ax7, c, n_particles_to_plot, True)
+    ax7.set_title("Invariant EKF", fontdict={'fontsize': 18})
+    ax7.legend(loc='upper left', fancybox=True, framealpha=1, shadow=True, borderpad=0.5, fontsize="13")
 
     # Append contour axis to axes
-    axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+    axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
     for ax in axes:
         ax.set_xlim(-0.5, 0.5)
         ax.set_ylim(-0.5, 0.5)
         ax.set_aspect('equal')
 
     return axes
+
+
+def plot_contours_exp_sample(mean: object,
+                             cov: np.ndarray,
+                             ax: object,
+                             c: Dict[str, Any],
+                             samples: int = 5000,
+                             plot_cartesian: bool = False,
+                             cmap: str = 'Reds'):
+    # Exp mean
+    exp_mean = ExpSE2(pose_matrix=mean)
+    # Obtain stdv around x-y
+    sigma_x, sigma_y = np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])
+    # Define Exp distribution
+    rv = multivariate_normal(mean=np.zeros(3), cov=cov)
+    # Sample exp distribution n times
+    samples_exp = rv.rvs(samples)
+    # Map all samples to SE(2)
+    cartesian_coordinates = list()
+    for s in samples_exp:
+        cartesian_coordinates.append((mean @ ExpSE2(tau=s).exp_map()).t)
+    cartesian_coordinates = np.asarray(cartesian_coordinates)
+    # Define marginal distribution for x-y in exp coordinates
+    rv = multivariate_normal(np.zeros(2), cov[:2, :2])
+    # Generate density for each point in grid - data is centered so mean is zero
+    # This is effectively computing the marginal v pdf without orientation
+    z = rv.pdf(samples_exp[:, :2])
+    if plot_cartesian:
+        x, y = cartesian_coordinates[:, 0], cartesian_coordinates[:, 1]
+    else:
+        # Uncenter exp samples
+        x, y = samples_exp[:, 0] + exp_mean.tau[0], samples_exp[:, 1] + exp_mean.tau[1]
+    # Plot the actual results
+    # Use KDE for contour plotting in Cartesian space
+    xy = np.vstack([x, y])
+    kde = gaussian_kde(xy)
+    xx, yy = np.mgrid[x.min():x.max():100j, y.min():y.max():100j]
+    zz = kde(np.vstack([xx.ravel(), yy.ravel()])).reshape(xx.shape)
+
+    alphas = [0.4, 0.6, 0.8][::-1]  # Adjust to make far-away levels darker
+    l = [2.0, 1.5, 1.0][::-1]
+    levels=[rv.pdf(np.asarray([c * sigma_x, c * sigma_y])) for c in l]
+
+    # Plot contours with individual alpha values
+    for i, level in enumerate(levels):
+        ax.contour(xx, yy, zz, levels=[level], colors=c["c"], alpha=alphas[i], zorder=0)
+        # Create a dummy Line2D for each contour level for the legend
+        label = rf"{float(l[i])}$\sigma$"  # Format label as iσ
+        line = mlines.Line2D([], [], color=c["c"], alpha=alphas[i], label=label)
+        ax.add_line(line)
+
 
 if __name__ == '__main__':
     size = (100, 100, 100)

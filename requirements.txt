@@ -5,6 +5,7 @@ matplotlib
 notebook
 moviepy
 opencv-python
+einops
 comet_ml==3.28.2
 rich==12.4.4
 # Submitit with experimental branch
