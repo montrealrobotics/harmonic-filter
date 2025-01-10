@@ -132,11 +132,12 @@ If you found this code useful, please use the following citation.
 	title        = {The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups},
 	author       = {Saavedra-Ruiz, Miguel and Parkison, Steven A. and Arora, Ria and Forbes, James Richard and Paull, Liam},
 	year         = 2025,
+	journal      = {IEEE Robotics and Automation Letters},
 	volume       = {},
 	number       = {},
 	pages        = {1--8},
 	doi          = {10.1109/LRA.2025.3527346}
-}  
+}
 ```
 
 ### Ackowldegements
