@@ -1,6 +1,6 @@
 # The Harmonic Exponential Filter
 
-Code implementation for the paper "The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups". Examples in S1 and SE(2) (doors dataset and landmark simulator) are included.
+Code implementation for the paper "[The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups](https://arxiv.org/abs/2408.00907)". Examples in S1 and SE(2) (doors dataset and landmark simulator) are included.
 
 <p align="center">
   <img src="media/main.gif" />
@@ -128,12 +128,14 @@ The above command will produce this image.
 If you found this code useful, please use the following citation.
 
 ```bibtex
-@inproceedings{saavedra2025hef, 
-     title = "The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups",
-     author = {Miguel Saavedra-Ruiz and Steven A. Parkison and Ria Arora and James Richard Forbes and Liam Paull},
-     year = {2025},
-     booktitle = "IEEE Robot. and Automation Lett.",
-     year = 2025; 
+@article{saavedra2025hef,
+	title        = {The Harmonic Exponential Filter for Nonparametric Estimation on Motion Groups},
+	author       = {Saavedra-Ruiz, Miguel and Parkison, Steven A. and Arora, Ria and Forbes, James Richard and Paull, Liam},
+	year         = 2025,
+	volume       = {},
+	number       = {},
+	pages        = {1--8},
+	doi          = {10.1109/LRA.2025.3527346}
 }  
 ```
 
