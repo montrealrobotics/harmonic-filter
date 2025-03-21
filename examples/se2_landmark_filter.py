@@ -11,8 +11,7 @@ from prettytable import PrettyTable
 from tqdm import tqdm
 from copy import deepcopy
 
-from lie_learn.spectral.SE2FFT import SE2_FFT
-
+from src.spectral.se2_fft import SE2_FFT
 from src.distributions.se2_distributions import SE2, SE2Gaussian
 from src.filters.bayes_filter import BayesFilter
 from src.filters.range_ekf import RangeEKF
@@ -103,7 +102,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     # Assume this prior for measurement 
     nll["Measurement"].append(-np.log(0.5))
     nll["HEF"].append(
-        filter.neg_log_likelihood(prior.eta, prior.l_n_z, gt_pose, fft).item()
+        filter.neg_log_likelihood2(prior.prob, prior.l_n_z, gt_pose, grid_size).item()
     )
     nll["EKF"].append(ekf.neg_log_likelihood(gt_pose))
     nll["PF"].append(pf.neg_log_likelihood(gt_pose, (-0.5, 0.5), grid_size))

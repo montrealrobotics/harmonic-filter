@@ -11,8 +11,7 @@ from prettytable import PrettyTable
 from tqdm import tqdm
 from copy import deepcopy
 
-from lie_learn.spectral.SE2FFT import SE2_FFT
-
+from src.spectral.se2_fft import SE2_FFT
 from src.simulators.se2_door_dataset import SE2DoorDataset
 from src.distributions.se2_distributions import SE2, SE2Gaussian
 from src.filters.bayes_filter import BayesFilter

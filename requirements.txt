@@ -1,9 +1,8 @@
-git+https://github.com/saparkison/lie_learn.git
 numpy
 scipy
 matplotlib
 notebook
-moviepy
+moviepy==1.0.3
 opencv-python
 einops
 comet_ml==3.28.2

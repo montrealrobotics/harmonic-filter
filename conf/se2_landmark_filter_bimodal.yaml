@@ -40,7 +40,7 @@ filter:
   grid_size: [50, 50, 32]
   var_motion: 0.001
   var_measurement: 0.0001
-  var_prior: [0.1, 0.1, 0.1]
+  var_prior: [0.003, 0.003, 0.003]
 
 # Video params
 duration: null   # Duration of each frame in milliseconds

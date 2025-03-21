@@ -4,8 +4,22 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 import numpy as np
 
-from lie_learn.spaces.Tn import linspace
 from src.distributions.s1_distributions import S1
+
+def linspace(b, n=1, convention='regular'):
+    """
+    Linspace in the n-Torus. 
+    Code adapted from https://github.com/AMLab-Amsterdam/lie_learn
+    """
+    if convention == 'regular':
+        res = []
+        for i in range(n):
+            res.append(np.arange(b) * 2 * np.pi / b)
+
+    else:
+        raise ValueError('Unknown convention:' + convention)
+
+    return res
 
 
 def plot_s1_func(f: List[np.ndarray], legend=None, ax=None, plot_type: str = 'polar'):

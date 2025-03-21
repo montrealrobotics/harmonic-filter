@@ -3,8 +3,7 @@ import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lie_learn.spectral.SE2FFT import SE2_FFT
-
+from src.spectral.se2_fft import SE2_FFT
 from src.distributions.se2_distributions import SE2, SE2Gaussian, SE2Square
 from src.sampler.se2_sampler import se2_grid_samples
 from src.utils.se2_plotting import plot_se2_contours

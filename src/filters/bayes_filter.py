@@ -9,7 +9,7 @@ from scipy.interpolate import RegularGridInterpolator
 from einops import rearrange
 
 from src.distributions.distribution_base import HarmonicExponentialDistribution
-from lie_learn.spectral.SE2FFT import SE2_FFT
+from src.spectral.se2_fft import SE2_FFT
 
 
 class BayesFilter:

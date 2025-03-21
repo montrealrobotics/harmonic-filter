@@ -2,7 +2,29 @@
 Code adapted from https://github.com/AMLab-Amsterdam/lie_learn
 """
 import numpy as np
+from numpy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
+from scipy.ndimage.interpolation import map_coordinates
+
 from src.spectral.base_fft import FFTBase
+
+def map_wrap(f, coords):
+
+    # Create an agumented array, where the last row and column are added at the beginning of the axes
+    fa = np.empty((f.shape[0] + 1, f.shape[1] + 1))
+    fa[:-1, :-1] = f
+    fa[-1, :-1] = f[0, :]
+    fa[:-1, -1] = f[:, 0]
+    fa[-1, -1] = f[0, 0]
+
+    # Wrap coordinates
+    wrapped_coords_x = coords[0, ...] % f.shape[0]
+    wrapped_coords_y = coords[1, ...] % f.shape[1]
+    wrapped_coords = np.r_[wrapped_coords_x[None, ...], wrapped_coords_y[None, ...]]
+
+    # Interpolate
+    #return fa, wrapped_coords, map_coordinates(f, wrapped_coords, order=1, mode='constant', cval=np.nan, prefilter=False)
+    return map_coordinates(fa, wrapped_coords, order=1, mode='constant', cval=np.nan, prefilter=False)
+
 
 def shift_fft(f):
     nx = f.shape[0]
@@ -14,8 +36,10 @@ def shift_fft(f):
                        np.arange(q0, q0 + ny, dtype=int) % ny,
                        indexing='ij')
     fs = f[X, Y, ...]
+    # Compute the Fourier Transform of the discretely sampled function f : T^2 -> C.
+    f_hat = fftshift(fft2(fs, axes=(0, 1)), axes=(0, 1))
 
-    return T2FFT.analyze(fs, axes=(0, 1))
+    return f_hat / np.prod(f.shape[:2]) # np.prod([f.shape[ax] for ax in (0, 1)])
 
 def shift_ifft(fh):
     nx = fh.shape[0]
@@ -26,7 +50,9 @@ def shift_ifft(fh):
     X, Y = np.meshgrid(np.arange(-p0, -p0 + nx, dtype=int) % nx,
                        np.arange(-q0, -q0 + ny, dtype=int) % ny,
                        indexing='ij')
-    fs = T2FFT.synthesize(fh, axes=(0, 1))
+
+    # Inverse FFT in T2
+    fs = ifft2(ifftshift(fh * np.prod(fh.shape[:2]), axes=(0, 1)), axes=(0, 1))
 
     f = fs[X, Y, ...]
 
@@ -149,7 +175,8 @@ class SE2_FFT(FFTBase):
 
         # FFT along rotation angle theta
         # We conjugate the argument and the ouput so that the complex exponential has positive instead of negative sign
-        f2 = T1FFT.analyze(f1p.conj(), axis=2).conj()
+        # This is equivalent to a S1 FFT - we do not use our method as it is a real FFT
+        f2 = (fftshift(fft(f1p.conj(), axis=2), axes=2) / f1p.conj().shape[2]).conj()
         # This gives f2[r, varphi, q]
         # where q ranges from q = -floor(f1p.shape[2] / 2) to q = ceil(f1p.shape[2] / 2) - 1  (inclusive)
 
@@ -161,14 +188,14 @@ class SE2_FFT(FFTBase):
         f2f = f2 * factor
 
         # FFT along polar coordinate of frequency domain
-        f_hat = T1FFT.analyze(f2f.conj(), axis=1).conj()
+        f_hat = (fftshift(fft(f2f.conj(), axis=1), axes=1) / f2f.conj().shape[1]).conj()
         # This gives f_hat[r, p, q]
 
         return f, f1c, f1p, f2, f2f, f_hat
 
     def synthesize(self, f_hat):
 
-        f2f = T1FFT.synthesize(f_hat.conj(), axis=1).conj()
+        f2f = ifft(ifftshift(f_hat.conj() * f_hat.conj().shape[1], axes=1), axis=1).conj()
 
         # Multiply f_2 by a phase factor:
         m_min = -np.floor(f2f.shape[2] / 2)
@@ -178,7 +205,7 @@ class SE2_FFT(FFTBase):
 
         f2 = f2f * factor[None, ...]
 
-        f1p = T1FFT.synthesize(f2.conj(), axis=2).conj()
+        f1p = ifft(ifftshift(f2.conj() * f2.conj().shape[2], axes=2), axis=2).conj()
 
         f1c = self.resample_p2c_3d(f1p)
 

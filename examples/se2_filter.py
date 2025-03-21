@@ -7,8 +7,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lie_learn.spectral.SE2FFT import SE2_FFT
-
+from src.spectral.se2_fft import SE2_FFT
 from src.distributions.se2_distributions import SE2, SE2Gaussian
 from src.filters.bayes_filter import BayesFilter
 from src.groups.se2_group import SE2Group

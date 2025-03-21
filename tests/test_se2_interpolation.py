@@ -3,8 +3,7 @@ import unittest
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from lie_learn.spectral.SE2FFT import SE2_FFT
-
+from src.spectral.se2_fft import SE2_FFT
 from src.filters.bayes_filter import BayesFilter
 from src.distributions.se2_distributions import SE2Gaussian
 from src.sampler.se2_sampler import se2_grid_samples

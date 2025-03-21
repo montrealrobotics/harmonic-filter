@@ -212,7 +212,7 @@ def plot_se2_filters(filters: Dict[str, List[np.ndarray]],
     ax1.scatter(harmonic[0][0], harmonic[0][1], **c)
     c["label"] = "Mode"
     c["edgecolor"] = "honeydew"
-    c["linewidth"] = 1.5
+    c["lw"] = 1.5
     ax1.scatter(harmonic[2][0], harmonic[2][1], **c)
     if harmonic[1].ndim == 3:
         harmonic_posterior = np.trapz(harmonic[1], x=theta, axis=2)
@@ -244,7 +244,7 @@ def plot_se2_filters(filters: Dict[str, List[np.ndarray]],
     ax3.scatter(pf[0][0], pf[0][1], **c)
     c["label"] = "Mode"
     c["edgecolor"] = "honeydew"
-    c["linewidth"] = 1.5
+    c["lw"] = 1.5
     ax3.scatter(pf[2][0], pf[2][1], **c)
     ax3.scatter(pf[1][idx, 0], pf[1][idx, 1], c=c['c'], s=30, alpha=0.2, marker=c['marker'], zorder=0)
 
@@ -258,7 +258,7 @@ def plot_se2_filters(filters: Dict[str, List[np.ndarray]],
     ax4.scatter(hf[0][0], hf[0][1], **c)
     c["label"] = "Mode"
     c["edgecolor"] = "honeydew"
-    c["linewidth"] = 1.5
+    c["lw"] = 1.5
     ax4.scatter(hf[2][0], hf[2][1], **c)
     hf_posterior = hf[1].sum(-1)
     max_value, min_value = hf_posterior.max(), hf_posterior.min()
